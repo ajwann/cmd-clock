@@ -1,0 +1,18 @@
+{
+  "name": "cmd-clock",
+  "version": "0.1.0",
+  "description": "Remembers how long each command takes in a repo and warns Claude before it runs one that will outlast its timeout.",
+  "author": {
+    "name": "Adam Wanninger",
+    "email": "adam@awanninger.com"
+  },
+  "homepage": "https://github.com/ajwann/cmd-clock",
+  "repository": "https://github.com/ajwann/cmd-clock",
+  "license": "MIT",
+  "keywords": [
+    "timing",
+    "timeout",
+    "bash",
+    "hooks"
+  ]
+}

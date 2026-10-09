@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""cmd-clock CLI: `cmd-clock [top|forget] [--project DIR] [-n N]` - slowest commands seen in a repo."""
+import argparse
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+from cmd_clock.core import connect, fmt, p90  # noqa: E402
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="cmd-clock")
+    ap.add_argument("action", nargs="?", default="top", choices=["top", "forget"])
+    ap.add_argument("--project", default=os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    ap.add_argument("-n", type=int, default=15)
+    a = ap.parse_args()
+    project = os.path.abspath(a.project)
+    with connect() as con:
+        if a.action == "forget":
+            n = con.execute("DELETE FROM runs WHERE project=?", (project,)).rowcount
+            print(f"forgot {n} run(s) for {project}")
+            return 0
+        rows = con.execute("SELECT key, ms, timed_out FROM runs WHERE project=?", (project,)).fetchall()
+    by: dict = {}
+    for key, ms, to in rows:
+        by.setdefault(key, []).append((ms, to))
+    if not by:
+        print(f"no runs recorded for {project}")
+        return 0
+    ranked = sorted(by.items(), key=lambda kv: -p90([m for m, _ in kv[1]]))[: a.n]
+    print(f"| p90 | max | runs | timeouts | command |\n|---|---|---|---|---|")
+    for key, v in ranked:
+        ms = [m for m, _ in v]
+        print(f"| {fmt(p90(ms))} | {fmt(max(ms))} | {len(v)} | {sum(t for _, t in v)} | `{key[:100]}` |")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
